@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v4.min.js" charset="utf-8"></script>
+    <title></title>
+    <style>
+
+    body {
+      /*background-color: rgba(238,	162, 154, 0.7);*/
+      background-color: #f0efef;
+    }
+
+    svg {
+      background-color: aliceBlue;
+      border: solid 1px black;
+      margin-left: 2rem;
+
+    }
+
+    .title {
+      text-align: center;
+      font-family: sans-serif;
+    }
+
+
+    h1 {
+      text-align: center;
+      font-family: sans-serif;
+    }
+
+    .text {
+      background-color: rgba(182,	189,	186, 0.5);
+      text-align: center;
+      margin: 2rem 8rem 0 8rem;
+    }
+
+    g .key {
+      position: absolute;
+    }
+
+    .customized_text {
+      background: black;
+    }
+
+
+
+
+    </style>
+  </head>
+  <body>
+
+    <div class="title">
+
+      <h2>EU LOBBYING EXPENDITURES BY EUROPEAN COUNTRIES</h2>
+
+    </div>
+
+    <div class='map'>
+
+    </div>
+
+    <div class='text'>
+
+      <h3> The data we used to analyse the amount of money spent on EU lobbying by countries have been extracted from the EU
+      transparency register. </h3>
+
+      <p><strong> Belgium have been removed because it was skewing the all map. Indeed, many companies have their headquarters in Belgium
+        but it doesn't mean that they are Belgian; it means that they want to be closed to the European Parliament.
+      </strong></p>
+
+      <p>As Belgium, Belarus is in grey but for a different reason: according to the EU transparency register, this country didn't spend any moeny for EU lobbying this last three years. </p>
+    </div>
+
+    <script>
+
+    var width = 1200;
+    var height = 850;
+
+    var centered;
+
+    var margin = {
+      top: 0,
+      right: 10,
+      left: 10,
+      bottom: 10
+    }
+
+    var active = d3.select(null);
+
+    var canvas = d3.select('.map')
+                    .append('svg')
+                    .attr('width', width)
+                    .attr('height', height)
+
+
+    width = width - margin.right - margin.left;
+    height = height - margin.top - margin.bottom;
+
+    var format = d3.format(",d");
+
+    var color = d3.scaleQuantize()
+                  .range(["#fff2df", "#d5f4e6", "#b1cbbb", "#eea29a", "#c94c4c"]);
+
+
+    var projection = d3.geoMercator().scale(800).translate([width/3, height*1.5]);;
+
+    var path = d3.geoPath().projection(projection);
+
+    var g = canvas.append("g")
+    .attr("class", "key")
+    .attr("transform", "translate(0,180)");
+
+
+    var x = d3.scaleLinear()
+    .domain([1, 5])
+    .rangeRound([220, 980]);
+
+
+
+    g.selectAll("rect")
+      .data(color.range().map(function(d) {
+          d = color.invertExtent(d);
+          if (d[0] == null) d[0] = x.domain()[0];
+          if (d[1] == null) d[1] = x.domain()[1];
+          return d;
+        }))
+      .enter().append("rect")
+        .attr("height", 12)
+        .attr("x", function(d) { return x(d[0]); })
+        .attr("width", function(d) { return x(d[1]) - x(d[0]); })
+        .attr("fill", function(d) { return color(d[0]); });
+
+    g.append("text")
+        .attr("class", "caption")
+        .attr("x", x.range()[0] - 160)
+        .attr("y", -6)
+        .attr("fill", "#000")
+        .attr("text-anchor", "start")
+        .attr("font-weight", "bold")
+        .text("Amount of money spent since 2015");
+
+    g.append("text")
+            .attr("class", "caption axis")
+            .attr('x', x.range()[0] -10)
+            .attr("y", 26)
+            .attr("fill", "#000")
+            .attr("text-anchor", "start")
+            .attr("font-weight", "bold")
+            .text("248987631€");
+
+    g.append("text")
+            .attr("class", "caption axis")
+            .attr('x', x.range()[0] - 210)
+            .attr("y", 26)
+            .attr("fill", "#000")
+            .attr("text-anchor", "start")
+            .attr("font-weight", "bold")
+            .text("9999€");
+
+    g.call(d3.axisBottom(x)
+        .tickSize(0)
+        .tickArguments([0, 20])
+        .tickValues(color.domain()))
+      .select(".domain")
+        .remove();
+
+    canvas.selectAll('g.tick').remove()
+
+
+
+
+          d3.json('europe.json', function(json) {
+
+
+            d3.csv("euexpenditures.csv", function(data) {
+
+              data.forEach(function(d) {
+                d.Higher_cost = +d.Higher_cost;
+                console.log(d);
+              });
+
+              color.domain([d3.min(data, function(d) { return d.Higher_cost;}),
+                            d3.max(data, function(d) { return d.Higher_cost;})
+                          ]);
+
+              console.log(data);
+
+
+              for (var i = 0; i < data.length; i++) {
+                var dataCountry = data[i].Countries;
+
+                var dataValue = data[i].Higher_cost;
+                console.log(dataValue)
+
+                for(var j = 0; j < json.features.length; j++) {
+
+                  var jsonCountry = json.features[j].properties.NAME;
+
+                  if (dataCountry == jsonCountry) {
+                    json.features[j].properties.value = dataValue;
+
+
+                    break;
+                  }
+                }
+              }
+
+
+            var countries = canvas.selectAll('path')
+                              .data(json.features)
+                              .enter()
+                              .append('path')
+                              .attr('id', function(d, i) { return d.properties.NAME})
+                              .attr('label-country', function(d, i) { return d.properties.NAME})
+                              .attr('data-centre-x', function(d){ return path.centroid(d)[0]; })
+                              .attr('data-centre-y', function(d){ return path.centroid(d)[1]; })
+                              .attr('class', 'countries')
+                              .style('fill', function(d) {
+                                var value = d.properties.value;
+
+                                if(value) {
+                                  return color(value);
+                                } else {
+                                  return '#ccc';
+                                }
+                              })
+                              .attr('data-value', function(d) { return d.properties.value})
+                              .attr('stroke', 'black')
+                              .attr('stroke-width', '0.5px')
+                              .attr("d", path)
+                              .on("mouseover", function(d, i) {
+                                            var country = d3.select(this)
+
+                                               canvas.selectAll("label-country")
+                                                  .data([country.attr('label-country')])
+                                                  .enter()
+                                                  .append("svg:text")
+                                                  .attr("id", function(d) {
+                                                     return country.attr('id');
+                                                  })
+                                                  .attr('class', 'countries')
+                                                  .attr('font-size', '16px')
+                                                  .attr('font-family', 'sans-serif')
+                                                  .attr('fill', 'black')
+                                                  .attr('font-weight', 'bold')
+                                                  .attr('text-anchor', 'middle')
+                                                  .attr('pointer-events', 'none')
+                                                  .attr("transform", function(d) {
+                                                         return (
+                                                            "translate(" + country.attr('data-centre-x') + "," + country.attr('data-centre-y') + ")"
+                                                         );})
+                                                  .text(function(d, i) { if(country.attr('data-value') == null) {
+                                                    return d;
+                                                  } else {
+                                                    return d + ': ' + format(country.attr('data-value')) + '€'
+                                                  }
+                                                     })
+
+                                                  canvas.selectAll("label-country")
+                                                              .data([country.attr('label-country')])
+                                                              .enter()
+                                                              .append("rect")
+                                                              .attr('x', x.range()[0] - 180)
+                                                              .attr("y", 306)
+                                                              .attr('width', x.range()[0] - 40)
+                                                              .attr("height", 206)
+                                                              .attr('class', 'customized_text')
+                                                              .attr('fill', 'lightGrey')
+                                                              .attr('stroke', 'black')
+
+                                                    canvas.selectAll('label-country')
+                                                        .data([country.attr('label-country')])
+                                                        .enter()
+                                                        .append('text')
+                                                            .attr('class', 'customized_text')
+                                                            .attr('text-anchor', 'middle')
+                                                            .attr('font-weight', 'bold')
+                                                            .attr('color', 'black')
+                                                            .attr('width', x.range()[0] - 250)
+                                                            .attr("height", 206)
+                                                            .attr('x', x.range()[0] - 90)
+                                                            .attr("y", 356)
+                                                            .text(function(d, i){
+                                                              return 'It represents'
+                                                            })
+
+                                                    canvas.selectAll('label-country')
+                                                        .data([country.attr('label-country')])
+                                                        .enter()
+                                                        .append('text')
+                                                            .attr('class', 'customized_text')
+                                                            .attr('text-anchor', 'middle')
+                                                            .attr('font-weight', 'bold')
+                                                            .attr('font-size', '20px')
+                                                            .attr('fill', 'darkRed')
+                                                            .attr('width', x.range()[0] - 250)
+                                                            .attr("height", 206)
+                                                            .attr('x', x.range()[0] - 90)
+                                                            .attr("y", 386)
+                                                            .text(function(d, i){
+                                                              return Math.round((+country.attr('data-value')/ 2032949325)*100) + ' %'
+                                                            })
+
+                                                    canvas.selectAll('label-country')
+                                                        .data([country.attr('label-country')])
+                                                        .enter()
+                                                        .append('text')
+                                                            .attr('class', 'customized_text')
+                                                            .attr('text-anchor', 'middle')
+                                                            .attr('font-weight', 'bold')
+                                                            .attr('color', 'black')
+                                                            .attr('width', x.range()[0] - 250)
+                                                            .attr("height", 206)
+                                                            .attr('x', x.range()[0] - 90)
+                                                            .attr("y", 416)
+                                                            .text(function(d, i){
+                                                              return 'of the total EU lobbying'
+                                                            })
+
+                                                    canvas.selectAll('label-country')
+                                                        .data([country.attr('label-country')])
+                                                        .enter()
+                                                        .append('text')
+                                                            .attr('class', 'customized_text')
+                                                            .attr('text-anchor', 'middle')
+                                                            .attr('font-weight', 'bold')
+                                                            .attr('color', 'black')
+                                                            .attr('width', x.range()[0] - 250)
+                                                            .attr("height", 206)
+                                                            .attr('x', x.range()[0] - 90)
+                                                            .attr("y", 446)
+                                                            .text(function(d, i){
+                                                              return 'expenditures'
+                                                            })
+
+                                                    canvas.selectAll('label-country')
+                                                        .data([country.attr('label-country')])
+                                                        .enter()
+                                                        .append('text')
+                                                            .attr('class', 'customized_text')
+                                                            .attr('text-anchor', 'middle')
+                                                            .attr('font-weight', 'bold')
+                                                            .attr('color', 'black')
+                                                            .attr('width', x.range()[0] - 250)
+                                                            .attr("height", 206)
+                                                            .attr('x', x.range()[0] - 90)
+                                                            .attr("y", 476)
+                                                            .text(function(d, i){
+                                                              return 'these last 3 years'
+                                                            })
+                                                    })
+                                                 .on("mouseout", function(d) {
+                                                    d3.select(this)
+                                                    canvas.selectAll("text.countries")
+                                                       .remove()
+                                                    canvas.selectAll("rect.customized_text").remove()
+                                                    canvas.selectAll("text.customized_text").remove()
+                                                  }).on("click", clicked);
+
+
+                            canvas.selectAll('path')
+                                      .data(json.features)
+                                      .enter()
+                                      .append('path')
+                                      .attr('d', path)
+
+
+
+                              function clicked(d) {
+                                  var x, y, k;
+
+                                  if (d && centered !== d) {
+                                    var centroid = path.centroid(d);
+                                    x = centroid[0];
+                                    y = centroid[1];
+                                    k = 4;
+                                    centered = d;
+                                  } else {
+                                    x = width / 2;
+                                    y = height / 2;
+                                    k = 1;
+                                    centered = null;
+                                  }
+
+
+
+                                  countries.selectAll("path")
+                                      .classed("active", centered && function(d) { return d === centered; });
+
+                                  countries.transition()
+                                      .duration(750)
+                                      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+                                      .selectAll('label_country')
+                                      .selectAll('text.countries')
+                                      .attr("transform", function(d) {
+                                         return (
+                                            "translate(" + country.attr(x) + "," + country.attr(y) + ")"
+                                         );})
+                                      .style("stroke-width", 0.8 / k + "px")
+                                  };
+
+
+
+
+
+                      });
+
+
+
+
+         });
+
+
+
+
+
+
+    </script>
+
+
+  </body>
+</html>
