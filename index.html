@@ -51,7 +51,7 @@
 
     <div class="title">
 
-      <h2>EU LOBBYING EXPENDITURES BY EUROPEAN COUNTRIES</h2>
+      <h2>EU LOBBYING EXPENDITURES BY EUROPEAN COUNTRY</h2>
 
     </div>
 
@@ -61,14 +61,14 @@
 
     <div class='text'>
 
-      <h3> The data we used to analyse the amount of money spent on EU lobbying by countries have been extracted from the EU
+      <h3> The data I used to analyse the amount of money spent on EU lobbying by each country have been extracted from the EU
       transparency register. </h3>
 
-      <p><strong> Belgium have been removed because it was skewing the all map. Indeed, many companies have their headquarters in Belgium
-        but it doesn't mean that they are Belgian; it means that they want to be closed to the European Parliament.
+      <p><strong> Belgium have been removed because it was skewing the data. Indeed, many companies have their headquarter in Belgium
+        but it doesn't mean that they are Belgian companies. It means that they chose to be closed to the European Parliament.
       </strong></p>
 
-      <p>As Belgium, Belarus is in grey but for a different reason: according to the EU transparency register, this country didn't spend any moeny for EU lobbying this last three years. </p>
+      <p>Belarus is also in grey but for a different reason: according to the EU transparency register, this country didn't spend any money in lobbying this last three years. </p>
     </div>
 
     <script>
@@ -355,7 +355,7 @@
                                                        .remove()
                                                     canvas.selectAll("rect.customized_text").remove()
                                                     canvas.selectAll("text.customized_text").remove()
-                                                  }).on("click", clicked);
+                                                  })
 
 
                             canvas.selectAll('path')
@@ -363,43 +363,6 @@
                                       .enter()
                                       .append('path')
                                       .attr('d', path)
-
-
-
-                              function clicked(d) {
-                                  var x, y, k;
-
-                                  if (d && centered !== d) {
-                                    var centroid = path.centroid(d);
-                                    x = centroid[0];
-                                    y = centroid[1];
-                                    k = 4;
-                                    centered = d;
-                                  } else {
-                                    x = width / 2;
-                                    y = height / 2;
-                                    k = 1;
-                                    centered = null;
-                                  }
-
-
-
-                                  countries.selectAll("path")
-                                      .classed("active", centered && function(d) { return d === centered; });
-
-                                  countries.transition()
-                                      .duration(750)
-                                      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-                                      .selectAll('label_country')
-                                      .selectAll('text.countries')
-                                      .attr("transform", function(d) {
-                                         return (
-                                            "translate(" + country.attr(x) + "," + country.attr(y) + ")"
-                                         );})
-                                      .style("stroke-width", 0.8 / k + "px")
-                                  };
-
-
 
 
 
