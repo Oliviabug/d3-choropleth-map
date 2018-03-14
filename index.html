@@ -7,7 +7,6 @@
     <style>
 
     body {
-      /*background-color: rgba(238,	162, 154, 0.7);*/
       background-color: #f0efef;
     }
 
@@ -299,7 +298,7 @@
                                                             .attr('x', x.range()[0] - 90)
                                                             .attr("y", 386)
                                                             .text(function(d, i){
-                                                              return Math.round((+country.attr('data-value')/ 2032949325)*100) + ' %'
+                                                              return ((+country.attr('data-value')/ 2032949325)*100).toFixed(3) + ' %'
                                                             })
 
                                                     canvas.selectAll('label-country')
